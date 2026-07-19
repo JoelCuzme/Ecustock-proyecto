@@ -1,0 +1,37 @@
+name: ecustock
+description: "Sistema de facturación y control de bodega en tiempo real para EcuStock"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Cliente HTTP potente para consumir tu API REST (admite interceptores para JWT)
+  dio: ^5.4.0
+
+  # Escaneo óptico de códigos de barras (EAN-8, EAN-13, etc.) utilizando la cámara
+  mobile_scanner: ^4.0.1
+
+  # Almacenamiento local rápido y seguro para persistencia temporal (Modo Offline)
+  flutter_secure_storage: ^9.0.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Generador de adaptadores para la base de datos Hive
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.8
+
+  # Linter oficial para mantener las reglas de formato y buenas prácticas
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
