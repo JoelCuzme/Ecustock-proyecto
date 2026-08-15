@@ -13,7 +13,7 @@ class SedesListScreen extends StatefulWidget {
 }
 
 class _SedesListScreenState extends State<SedesListScreen> {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://192.168.1.2:3000';
 
   late final DioClient _dioClient;
   late Future<List<SedeModel>> _sedesFuture;

@@ -14,7 +14,7 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://192.168.1.2:3000';
 
   final AuthSecureStorage _secureStorage = AuthSecureStorage();
   late final DioClient _dioClient;

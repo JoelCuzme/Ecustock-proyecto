@@ -15,7 +15,7 @@ class RolesPermissionsScreen extends StatefulWidget {
 }
 
 class _RolesPermissionsScreenState extends State<RolesPermissionsScreen> {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://192.168.1.2:3000';
 
   final DioClient _dioClient = DioClient(baseUrl: _baseUrl);
   final List<_RoleItem> _roles = [];

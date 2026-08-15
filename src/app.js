@@ -54,7 +54,7 @@ async function startServer() {
     process.exit(1);
   }
 
-  app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
     console.log(`Documentación disponible en http://localhost:${PORT}/api/docs`);
   });

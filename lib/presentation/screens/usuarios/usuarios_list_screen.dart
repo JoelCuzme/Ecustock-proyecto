@@ -14,7 +14,7 @@ class UsuariosListScreen extends StatefulWidget {
 }
 
 class _UsuariosListScreenState extends State<UsuariosListScreen> {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://192.168.1.2:3000';
 
   late final DioClient _dioClient;
   late Future<List<UsuarioModel>> _usuariosFuture;

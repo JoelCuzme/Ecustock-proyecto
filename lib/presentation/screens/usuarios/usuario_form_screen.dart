@@ -11,7 +11,7 @@ class UsuarioFormScreen extends StatefulWidget {
 }
 
 class _UsuarioFormScreenState extends State<UsuarioFormScreen> {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://192.168.1.2:3000';
   static const List<String> _roles = [
     'Administrativo',
     'Bodega',
@@ -41,8 +41,7 @@ class _UsuarioFormScreenState extends State<UsuarioFormScreen> {
   }
 
   bool _isValidEmail(String value) {
-    const emailPattern =
-        r"^[\w.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}";
+    const emailPattern = r"^[\w.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}";
     return RegExp(emailPattern).hasMatch(value);
   }
 

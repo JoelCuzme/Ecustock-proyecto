@@ -11,7 +11,7 @@ class SedeFormScreen extends StatefulWidget {
 }
 
 class _SedeFormScreenState extends State<SedeFormScreen> {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://192.168.1.2:3000';
 
   final _formKey = GlobalKey<FormState>();
   final _nombreController = TextEditingController();

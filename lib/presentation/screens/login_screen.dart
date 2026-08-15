@@ -14,7 +14,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://192.168.1.2:3000';
 
   final _formKey = GlobalKey<FormState>();
   final _correoController = TextEditingController();
@@ -67,11 +67,15 @@ class _LoginScreenState extends State<LoginScreen> {
       final refreshToken = data?['refreshToken']?.toString();
       final userMap = data?['user'];
 
-      if (token == null || token.isEmpty || refreshToken == null || refreshToken.isEmpty) {
+      if (token == null ||
+          token.isEmpty ||
+          refreshToken == null ||
+          refreshToken.isEmpty) {
         throw DioException(
           requestOptions: response.requestOptions,
           response: response,
-          message: 'La respuesta del servidor no contiene los tokens esperados.',
+          message:
+              'La respuesta del servidor no contiene los tokens esperados.',
         );
       }
 

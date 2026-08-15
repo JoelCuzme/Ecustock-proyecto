@@ -15,7 +15,7 @@ class AsignarRolScreen extends StatefulWidget {
 }
 
 class _AsignarRolScreenState extends State<AsignarRolScreen> {
-  static const String _baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://192.168.1.2:3000';
   static const List<String> _roles = [
     'Administrativo',
     'Bodega',
