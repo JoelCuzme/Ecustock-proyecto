@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:ecustock/core/network/auth_secure_storage.dart';
 import 'package:ecustock/core/network/dio_client.dart';
@@ -92,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      context.go('/home');
     } on DioException catch (error) {
       final errorData = error.response?.data;
       final message = errorData is Map<String, dynamic>
