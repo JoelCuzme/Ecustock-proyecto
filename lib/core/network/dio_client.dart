@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 
 import '../errors/exceptions.dart';
 import 'auth_secure_storage.dart';
@@ -39,7 +39,7 @@ class DioClient {
     try {
       final accessToken = await _secureStorage.getAccessToken();
       if (accessToken != null && accessToken.isNotEmpty) {
-                options.headers['Authorization'] = 'Bearer ';
+        options.headers['Authorization'] = 'Bearer $accessToken';
       }
     } catch (_) {
       // If secure storage fails, continue without token injection.
@@ -74,7 +74,8 @@ class DioClient {
               accessToken: newAccessToken,
               refreshToken: newRefreshToken,
             );
- 
+
+            // Update header and retry original request once
             requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
             requestOptions.extra['retry'] = true;
             final retryResponse = await _dio.fetch(requestOptions);
@@ -136,16 +137,6 @@ class DioClient {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Shared client singleton to be used across the app
+const String _defaultBaseUrl = 'http://192.168.1.2:3000';
+final DioClient sharedDioClient = DioClient(baseUrl: _defaultBaseUrl);

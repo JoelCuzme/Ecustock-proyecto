@@ -14,6 +14,12 @@ dependencies:
   # Cliente HTTP potente para consumir tu API REST (admite interceptores para JWT)
   dio: ^5.4.0
 
+  # Estado reactivo para la lógica de negocio de la app
+  flutter_bloc: ^8.1.6
+
+  # Enrutado declarativo con guards y rutas protegidas
+  go_router: ^14.2.7
+
   # Escaneo óptico de códigos de barras (EAN-8, EAN-13, etc.) utilizando la cámara
   mobile_scanner: ^4.0.1
 
