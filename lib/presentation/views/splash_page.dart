@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:ecustock/core/models/user_profile.dart';
 import 'package:ecustock/core/network/auth_secure_storage.dart';
@@ -76,12 +77,12 @@ class _SplashPageState extends State<SplashPage> {
 
   void _navigateToHome() {
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+    context.go('/home');
   }
 
   void _navigateToLogin() {
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    context.go('/login');
   }
 
   @override

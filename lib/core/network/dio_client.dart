@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 
 import '../errors/exceptions.dart';
 import 'auth_secure_storage.dart';
@@ -39,7 +39,7 @@ class DioClient {
     try {
       final accessToken = await _secureStorage.getAccessToken();
       if (accessToken != null && accessToken.isNotEmpty) {
-                options.headers['Authorization'] = 'Bearer ';
+        options.headers['Authorization'] = 'Bearer $accessToken';
       }
     } catch (_) {
       // If secure storage fails, continue without token injection.
@@ -127,7 +127,7 @@ class DioClient {
           }
           if (statusCode >= 400) {
             return const ServerException(
-                'La petición contiene datos inválidos.');
+                'La peticiÃ³n contiene datos invÃ¡lidos.');
           }
       }
     }
@@ -135,6 +135,7 @@ class DioClient {
     return const NetworkException();
   }
 }
+
 
 
 
