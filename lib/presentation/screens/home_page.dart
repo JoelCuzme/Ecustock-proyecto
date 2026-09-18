@@ -14,14 +14,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
   Future<void> _logout() async {
     await AuthSecureStorage().clearTokens();
     AppSession().clear();
@@ -56,12 +48,6 @@ class _HomePageState extends State<HomePage> {
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            const Text('Has presionado el botón esta cantidad de veces:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => context.go('/usuarios'),
               child: const Text('Ver Usuarios'),
@@ -81,13 +67,13 @@ class _HomePageState extends State<HomePage> {
               onPressed: () => context.go('/products'),
               child: const Text('Ver Productos'),
             ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () => context.go('/bodega-scanner'),
+              child: const Text('Escáner de Bodega'),
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }

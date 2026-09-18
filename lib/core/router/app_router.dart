@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import 'package:ecustock/core/services/app_session.dart';
+import 'package:ecustock/presentation/screens/bodega_scanner_page.dart';
 import 'package:ecustock/presentation/screens/home_page.dart';
 import 'package:ecustock/presentation/screens/login_screen.dart';
 import 'package:ecustock/presentation/screens/products/add_product_page.dart';
@@ -59,6 +60,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/products/add',
       builder: (context, state) => const AddProductPage(),
+    ),
+    GoRoute(
+      path: '/bodega-scanner',
+      builder: (context, state) => const BodegaScannerPage(),
     ),
   ],
 );

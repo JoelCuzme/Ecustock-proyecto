@@ -50,6 +50,7 @@ class _AddProductViewState extends State<_AddProductView> {
       nombre: _nombreController.text.trim(),
       codigoBarras: _codigoController.text.trim(),
       stock: int.tryParse(_stockController.text.trim()) ?? 0,
+      stockMinimo: 0,
       precioCosto: double.tryParse(_precioController.text.trim()) ?? 0,
       precioVenta: double.tryParse(_precioController.text.trim()) ?? 0,
     );
