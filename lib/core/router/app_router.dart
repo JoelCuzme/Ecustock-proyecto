@@ -13,6 +13,7 @@ import 'package:ecustock/presentation/views/splash_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
+  refreshListenable: AppSession(),
   redirect: (context, state) {
     final isAuthenticated = AppSession().isAuthenticated;
     final isLoginRoute = state.matchedLocation == '/login';
@@ -29,14 +30,8 @@ final appRouter = GoRouter(
     return null;
   },
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const SplashPage(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const SplashPage()),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
       path: '/home',
       builder: (context, state) => const HomePage(title: 'EcuStock'),

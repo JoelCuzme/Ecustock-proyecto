@@ -2,6 +2,9 @@ const path = require('path');
 const express = require('express');
 const dotenv = require('dotenv');
 const mariadb = require('mariadb');
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const authRoutes = require('./routes/auth');
@@ -11,7 +14,18 @@ const sedesRoutes = require('./routes/sedes');
 const rolesRoutes = require('./routes/roles');
 const errorHandler = require('./middleware/errorHandler');
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+const requiredEnvironment = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET'];
+const missingEnvironment = requiredEnvironment.filter(
+  (name) => !process.env[name] || process.env[name].trim() === '',
+);
+
+if (missingEnvironment.length > 0) {
+  throw new Error(`Faltan variables de entorno requeridas: ${missingEnvironment.join(', ')}`);
+}
+
+if (Buffer.byteLength(process.env.JWT_SECRET, 'utf8') < 32) {
+  throw new Error('JWT_SECRET debe tener al menos 32 bytes.');
+}
 
 const PORT = process.env.PORT || 3000;
 
@@ -19,10 +33,10 @@ const app = express();
 app.use(express.json());
 
 const pool = mariadb.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'ecustock',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   connectionLimit: 5,
 });

@@ -10,24 +10,30 @@ class ProductRepository {
   final DioClient _dioClient;
 
   Future<List<Product>> getProducts() async {
-    final response = await _dioClient.client.get('/api/v1/products');
+    final response = await _dioClient.client.get('/api/v1/productos');
     final data = response.data;
 
     if (data is List) {
       return data
-          .map<Product>((item) => Product.fromJson(item as Map<String, dynamic>))
+          .map<Product>(
+            (item) => Product.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     }
 
     if (data is Map<String, dynamic> && data['products'] is List) {
       return (data['products'] as List)
-          .map<Product>((item) => Product.fromJson(item as Map<String, dynamic>))
+          .map<Product>(
+            (item) => Product.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     }
 
     if (data is Map<String, dynamic> && data['data'] is List) {
       return (data['data'] as List)
-          .map<Product>((item) => Product.fromJson(item as Map<String, dynamic>))
+          .map<Product>(
+            (item) => Product.fromJson(item as Map<String, dynamic>),
+          )
           .toList();
     }
 
@@ -36,7 +42,7 @@ class ProductRepository {
 
   Future<Product> addProduct(Product product) async {
     final response = await _dioClient.client.post(
-      '/api/v1/products',
+      '/api/v1/productos',
       data: product.toJson(includeId: false),
     );
 
@@ -53,5 +59,36 @@ class ProductRepository {
     }
 
     throw Exception('Respuesta inesperada al crear el producto.');
+  }
+
+  Future<Product> getProductByBarcode(String barcode) async {
+    final response = await _dioClient.client.get(
+      '/api/v1/productos/codigo/${Uri.encodeComponent(barcode)}',
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic> &&
+        data['product'] is Map<String, dynamic>) {
+      return Product.fromJson(data['product'] as Map<String, dynamic>);
+    }
+
+    throw Exception('Respuesta inesperada al consultar el producto.');
+  }
+
+  Future<Product> registerStockMovement({
+    required int productId,
+    required String type,
+    required int quantity,
+  }) async {
+    final response = await _dioClient.client.post(
+      '/api/v1/productos/$productId/movimientos',
+      data: {'tipo': type, 'cantidad': quantity},
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic> &&
+        data['product'] is Map<String, dynamic>) {
+      return Product.fromJson(data['product'] as Map<String, dynamic>);
+    }
+
+    throw Exception('Respuesta inesperada al registrar el movimiento.');
   }
 }

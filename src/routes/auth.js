@@ -7,7 +7,7 @@ const rolModel = require('../models/rolModel');
 const refreshTokenModel = require('../models/refreshTokenModel');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'mi_secreto_jwt';
+const JWT_SECRET = process.env.JWT_SECRET;
 const ACCESS_TOKEN_EXPIRES = process.env.JWT_ACCESS_EXPIRATION || '15m';
 const REFRESH_TOKEN_EXPIRES = process.env.JWT_REFRESH_EXPIRATION || '7d';
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -7,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:ecustock/core/services/native_permission_service.dart';
 import 'package:ecustock/core/services/notification_service.dart';
 import 'package:ecustock/data/models/product.dart';
+import 'package:ecustock/data/repositories/product_repository.dart';
 
 class BodegaScannerPage extends StatefulWidget {
   const BodegaScannerPage({super.key});
@@ -22,44 +24,18 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
     torchEnabled: false,
   );
   final TextEditingController _barcodeController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController(text: '1');
+  final TextEditingController _quantityController =
+      TextEditingController(text: '1');
+  final ProductRepository _productRepository = ProductRepository();
 
   PermissionStatus _cameraStatus = PermissionStatus.denied;
   bool _manualMode = true;
   bool _isLoading = true;
+  bool _isSearching = false;
+  bool _isSaving = false;
   Product? _selectedProduct;
   String? _statusMessage;
   String _movement = 'egreso';
-
-  final List<Product> _demoProducts = [
-    Product(
-      id: 1,
-      nombre: 'Café Molido EcuStock 500g',
-      codigoBarras: '123456789012',
-      stock: 18,
-      stockMinimo: 20,
-      precioCosto: 4.50,
-      precioVenta: 7.50,
-    ),
-    Product(
-      id: 2,
-      nombre: 'Papel Bond A4 80 gr',
-      codigoBarras: '987654321098',
-      stock: 12,
-      stockMinimo: 15,
-      precioCosto: 2.40,
-      precioVenta: 4.25,
-    ),
-    Product(
-      id: 3,
-      nombre: 'Suero antiséptico 500ml',
-      codigoBarras: '456789123456',
-      stock: 8,
-      stockMinimo: 10,
-      precioCosto: 6.80,
-      precioVenta: 11.50,
-    ),
-  ];
 
   @override
   void initState() {
@@ -89,7 +65,8 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
 
   Future<void> _requestCameraPermission() async {
     setState(() => _isLoading = true);
-    final status = await NativePermissionService.requestCameraPermission(context);
+    final status =
+        await NativePermissionService.requestCameraPermission(context);
     if (!mounted) {
       return;
     }
@@ -119,28 +96,51 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
     final isValid = RegExp(r'^\d{8,14}$').hasMatch(cleanCode);
 
     if (!isValid) {
-      _showStatus('El código debe tener entre 8 y 14 dígitos.', const Color(0xFFEF4444));
+      _showStatus('El código debe tener entre 8 y 14 dígitos.',
+          const Color(0xFFEF4444));
       return;
     }
 
-    Product? foundProduct;
-    for (final product in _demoProducts) {
-      if (product.codigoBarras == cleanCode) {
-        foundProduct = product;
-        break;
+    if (_isSearching || _isSaving) return;
+    setState(() => _isSearching = true);
+    try {
+      final product = await _productRepository.getProductByBarcode(cleanCode);
+      if (!mounted) return;
+      setState(() {
+        _selectedProduct = product;
+        _barcodeController.text = cleanCode;
+      });
+      _showStatus(
+        'Producto encontrado en inventario',
+        const Color(0xFF10B981),
+      );
+    } on DioException catch (error) {
+      if (mounted) {
+        _showStatus(
+          _errorMessage(error),
+          error.response?.statusCode == 404
+              ? const Color(0xFFF59E0B)
+              : const Color(0xFFEF4444),
+        );
       }
+    } catch (error) {
+      if (mounted) {
+        _showStatus(
+          'No se pudo consultar el producto: $error',
+          const Color(0xFFEF4444),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
     }
+  }
 
-    if (foundProduct == null) {
-      _showStatus('No se localizó el producto para ese código.', const Color(0xFFF59E0B));
-      return;
+  String _errorMessage(DioException error) {
+    final data = error.response?.data;
+    if (data is Map<String, dynamic> && data['message'] != null) {
+      return data['message'].toString();
     }
-
-    setState(() {
-      _selectedProduct = foundProduct;
-      _barcodeController.text = cleanCode;
-    });
-    _showStatus('Producto encontrado en inventario', const Color(0xFF10B981));
+    return error.message ?? 'No se pudo completar la operación.';
   }
 
   void _showStatus(String message, Color color) {
@@ -156,56 +156,77 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
 
   Future<void> _registerMovement(String type) async {
     if (_selectedProduct == null) {
-      _showStatus('Primero escanea o busca un producto.', const Color(0xFFEF4444));
+      _showStatus(
+          'Primero escanea o busca un producto.', const Color(0xFFEF4444));
       return;
     }
 
     final quantity = int.tryParse(_quantityController.text) ?? 1;
     if (quantity <= 0) {
-      _showStatus('La cantidad debe ser mayor que cero.', const Color(0xFFEF4444));
+      _showStatus(
+          'La cantidad debe ser mayor que cero.', const Color(0xFFEF4444));
       return;
     }
 
-    final currentStock = _selectedProduct!.stock;
-    final nextStock = type == 'ingreso' ? currentStock + quantity : currentStock - quantity;
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
+      final updatedProduct = await _productRepository.registerStockMovement(
+        productId: _selectedProduct!.id,
+        type: type,
+        quantity: quantity,
+      );
+      if (!mounted) return;
 
-    final shouldTriggerAlert = nextStock <= _selectedProduct!.stockMinimo;
+      setState(() {
+        _selectedProduct = updatedProduct;
+        _isSaving = false;
+      });
+      _showStatus(
+        type == 'ingreso'
+            ? 'Ingreso registrado correctamente.'
+            : 'Egreso registrado correctamente.',
+        const Color(0xFF10B981),
+      );
 
-    if (shouldTriggerAlert) {
-      final permissionStatus = await Permission.notification.status;
-      if (permissionStatus.isGranted) {
-        await NotificationService.showInventoryAlert(
-          productName: _selectedProduct!.nombre,
-          stockActual: nextStock,
-          stockMinimo: _selectedProduct!.stockMinimo,
-        );
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFFF59E0B),
-              content: Text(
-                'Alerta: ${_selectedProduct!.nombre} quedó en $nextStock unidades. Límite mínimo: ${_selectedProduct!.stockMinimo}.',
-              ),
-            ),
-          );
+      if (updatedProduct.stock <= updatedProduct.stockMinimo) {
+        try {
+          final permissionStatus = await Permission.notification.status;
+          if (permissionStatus.isGranted) {
+            await NotificationService.showInventoryAlert(
+              productName: updatedProduct.nombre,
+              stockActual: updatedProduct.stock,
+              stockMinimo: updatedProduct.stockMinimo,
+            );
+          } else if (mounted) {
+            _showStatus(
+              'Alerta: ${updatedProduct.nombre} quedó en ${updatedProduct.stock} unidades. Límite mínimo: ${updatedProduct.stockMinimo}.',
+              const Color(0xFFF59E0B),
+            );
+          }
+        } catch (error) {
+          if (mounted) {
+            _showStatus(
+              'Movimiento registrado, pero no se pudo enviar la alerta: $error',
+              const Color(0xFFF59E0B),
+            );
+          }
         }
       }
+    } on DioException catch (error) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        _showStatus(_errorMessage(error), const Color(0xFFEF4444));
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        _showStatus(
+          'No se pudo registrar el movimiento: $error',
+          const Color(0xFFEF4444),
+        );
+      }
     }
-
-    setState(() {
-      _selectedProduct = _selectedProduct!.copyWith(
-        stock: nextStock,
-      );
-    });
-
-    _showStatus(
-      type == 'ingreso'
-          ? 'Ingreso registrado correctamente.'
-          : 'Egreso registrado correctamente.',
-      const Color(0xFF10B981),
-    );
   }
 
   Color _stockColor(int stock, int stockMinimo) {
@@ -386,7 +407,9 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
                     final rawValue = capture.barcodes.isNotEmpty
                         ? capture.barcodes.first.rawValue
                         : null;
-                    if (rawValue != null && rawValue.trim().isNotEmpty) {
+                    if (rawValue != null &&
+                        rawValue.trim().isNotEmpty &&
+                        rawValue.trim() != _selectedProduct?.codigoBarras) {
                       _lookupProductByCode(rawValue);
                     }
                   },
@@ -464,7 +487,9 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
           children: [
             Expanded(
               child: FilledButton.icon(
-                onPressed: () => _lookupProductByCode(_barcodeController.text),
+                onPressed: _isSearching
+                    ? null
+                    : () => _lookupProductByCode(_barcodeController.text),
                 icon: const Icon(Icons.search_rounded),
                 label: const Text('Buscar producto'),
               ),
@@ -537,7 +562,8 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFFDBEAFE),
                   borderRadius: BorderRadius.circular(999),
@@ -665,9 +691,18 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () => _registerMovement(_movement),
-                  icon: const Icon(Icons.check_circle_rounded),
-                  label: Text(_movement == 'ingreso' ? 'Registrar ingreso' : 'Registrar egreso'),
+                  onPressed:
+                      _isSaving ? null : () => _registerMovement(_movement),
+                  icon: _isSaving
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_circle_rounded),
+                  label: Text(_movement == 'ingreso'
+                      ? 'Registrar ingreso'
+                      : 'Registrar egreso'),
                 ),
               ),
             ],
@@ -819,7 +854,10 @@ class _ScannerGuidePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
-    final scanY = rect.top + (math.sin(DateTime.now().millisecondsSinceEpoch / 300) + 1) * rect.height / 2;
+    final scanY = rect.top +
+        (math.sin(DateTime.now().millisecondsSinceEpoch / 300) + 1) *
+            rect.height /
+            2;
     canvas.drawLine(
       Offset(rect.left + 12, scanY),
       Offset(rect.right - 12, scanY),

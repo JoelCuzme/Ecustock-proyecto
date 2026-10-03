@@ -1,17 +1,28 @@
+import 'package:flutter/foundation.dart';
+
 import '../models/user_profile.dart';
 
-class AppSession {
+class AppSession extends ChangeNotifier {
   AppSession._();
 
   static final AppSession _instance = AppSession._();
 
   factory AppSession() => _instance;
 
-  UserProfile? currentUser;
+  UserProfile? _currentUser;
 
-  bool get isAuthenticated => currentUser != null;
+  UserProfile? get currentUser => _currentUser;
+
+  set currentUser(UserProfile? user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+
+  bool get isAuthenticated => _currentUser != null;
 
   void clear() {
-    currentUser = null;
+    if (_currentUser == null) return;
+    _currentUser = null;
+    notifyListeners();
   }
 }

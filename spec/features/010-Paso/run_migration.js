@@ -5,6 +5,15 @@ const mariadb = require('mariadb');
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
+const requiredEnvironment = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+const missingEnvironment = requiredEnvironment.filter(
+  (name) => !process.env[name] || process.env[name].trim() === '',
+);
+
+if (missingEnvironment.length > 0) {
+  throw new Error(`Faltan variables de entorno requeridas: ${missingEnvironment.join(', ')}`);
+}
+
 const SQL_DIRECTORY = __dirname;
 const sqlFiles = fs
   .readdirSync(SQL_DIRECTORY)
@@ -18,10 +27,10 @@ if (sqlFiles.length === 0) {
 
 async function run() {
   const pool = mariadb.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'ecustock',
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
     connectionLimit: 5,
   });
@@ -42,7 +51,7 @@ async function run() {
     process.exit(1);
   } finally {
     if (conn) conn.release();
-    try { await pool.end(); } catch (e) {}
+    await pool.end();
   }
 }
 

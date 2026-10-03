@@ -47,6 +47,12 @@ class ForbiddenException extends ServerException {
   ]);
 }
 
+class ConflictException extends AppException {
+  const ConflictException([
+    super.message = 'La solicitud entra en conflicto con el estado actual.',
+  ]);
+}
+
 class NotFoundException extends ServerException {
   const NotFoundException([
     super.message = 'No se encontró el recurso solicitado.',

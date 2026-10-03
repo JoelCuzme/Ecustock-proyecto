@@ -1,7 +1,8 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
-const productoController = require('../controllers/productoController'); //  Ruta nuevaconst cacheService = require('../services/cacheService');
+const { requireRoles } = require('../middleware/roleMiddleware');
 const cacheService = require('../services/cacheService');
+const productoController = require('../controllers/productoController');
 const router = express.Router();
 
 /**
@@ -25,6 +26,9 @@ const router = express.Router();
  *         descripcion:
  *           type: string
  *         precio_venta:
+ *           type: number
+ *           format: float
+ *         precio_costo:
  *           type: number
  *           format: float
  *         stock_actual:
@@ -76,6 +80,65 @@ router.get('/', authMiddleware, async (req, res, next) => {
     next(error);
   }
 });
+
+router.get(
+  '/codigo/:codigoBarras',
+  authMiddleware,
+  productoController.obtenerProductoPorCodigo,
+);
+
+/**
+ * @openapi
+ * /api/v1/productos/{id}/movimientos:
+ *   post:
+ *     tags:
+ *       - Productos
+ *     summary: Registrar un movimiento de inventario
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tipo, cantidad]
+ *             properties:
+ *               tipo:
+ *                 type: string
+ *                 enum: [ingreso, egreso]
+ *               cantidad:
+ *                 type: integer
+ *                 minimum: 1
+ *     responses:
+ *       200:
+ *         description: Movimiento registrado y stock actualizado
+ *       400:
+ *         description: Parámetros inválidos
+ *       403:
+ *         description: Rol sin permiso para registrar movimientos
+ *       409:
+ *         description: Stock insuficiente para el egreso
+ */
+router.post(
+  '/:id/movimientos',
+  authMiddleware,
+  requireRoles(['Administrativo', 'Bodega']),
+  async (req, res, next) => {
+  try {
+    cacheService.invalidate('productList');
+    await productoController.registrarMovimientoStock(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+  },
+);
 
 /**
  * @openapi

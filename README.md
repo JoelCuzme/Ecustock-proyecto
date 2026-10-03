@@ -39,6 +39,17 @@ flutter doctor
 
 A new Flutter project.
 
+## Configuración del backend
+
+1. Copia `.env.example` a `.env` y reemplaza las credenciales de ejemplo.
+2. Configura un `DB_USER` dedicado a la aplicación y una contraseña segura.
+3. Genera `JWT_SECRET` con al menos 32 bytes aleatorios; por ejemplo, ejecuta `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` y guarda el resultado sólo en `.env`.
+4. Ejecuta `node spec/features/010-Paso/run_migration.js` y luego `npm start`.
+
+Las migraciones conservan `precio_costo` como `NULL` para productos antiguos, ya que el valor debe cargarse desde una fuente confiable. La API exige completar ese costo antes de actualizar el producto o registrar movimientos de inventario.
+
+El escáner consulta los productos por código de barras y registra ingresos/egresos mediante `POST /api/v1/productos/:id/movimientos`. El backend bloquea la fila con `SELECT ... FOR UPDATE`, rechaza egresos sin stock con `409` y limita el movimiento a los roles `Administrativo` y `Bodega`.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

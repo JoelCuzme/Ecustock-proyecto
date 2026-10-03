@@ -1,6 +1,7 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 
 import '../errors/exceptions.dart';
+import '../services/app_session.dart';
 import 'auth_secure_storage.dart';
 
 /// HTTP client configured with token injection and automatic refresh handling.
@@ -20,10 +21,7 @@ class DioClient {
               ),
             ) {
     _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: _onRequest,
-        onError: _onError,
-      ),
+      InterceptorsWrapper(onRequest: _onRequest, onError: _onError),
     );
   }
 
@@ -57,7 +55,8 @@ class DioClient {
 
     if (response?.statusCode == 401 &&
         requestOptions.extra['retry'] != true &&
-        !requestOptions.path.endsWith('/api/v1/auth/refresh')) {
+        !requestOptions.path.endsWith('/api/v1/auth/refresh') &&
+        !requestOptions.path.endsWith('/api/v1/auth/login')) {
       final refreshToken = await _secureStorage.getRefreshToken();
       if (refreshToken != null && refreshToken.isNotEmpty) {
         try {
@@ -74,27 +73,25 @@ class DioClient {
               accessToken: newAccessToken,
               refreshToken: newRefreshToken,
             );
- 
+
             requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
             requestOptions.extra['retry'] = true;
             final retryResponse = await _dio.fetch(requestOptions);
             handler.resolve(retryResponse);
             return;
           }
-        } catch (_) {
-          // ignore and fall through to return original error below
+        } on DioException {
+          // A failed refresh invalidates the local session below.
         }
       }
 
       await _secureStorage.clearTokens();
+      AppSession().clear();
     }
 
     final mappedError = _mapDioException(error);
     handler.reject(
-      error.copyWith(
-        message: mappedError.message,
-        error: mappedError,
-      ),
+      error.copyWith(message: mappedError.message, error: mappedError),
     );
   }
 
@@ -110,13 +107,27 @@ class DioClient {
     }
 
     if (statusCode != null) {
+      final data = response?.data;
+      final responseMessage =
+          data is Map<String, dynamic> ? data['message']?.toString() : null;
       switch (statusCode) {
         case 400:
-          return const BadRequestException();
+          return BadRequestException(
+            responseMessage ??
+                'La solicitud es inválida. Verifica los datos e intenta nuevamente.',
+          );
         case 401:
           return const UnauthorizedException();
         case 403:
-          return const ForbiddenException();
+          return ForbiddenException(
+            responseMessage ??
+                'No tienes permisos para acceder a este recurso.',
+          );
+        case 409:
+          return ConflictException(
+            responseMessage ??
+                'La solicitud entra en conflicto con el estado actual.',
+          );
         case 404:
           return const NotFoundException();
         case 500:
@@ -127,7 +138,8 @@ class DioClient {
           }
           if (statusCode >= 400) {
             return const ServerException(
-                'La peticiÃ³n contiene datos invÃ¡lidos.');
+              'La peticiÃ³n contiene datos invÃ¡lidos.',
+            );
           }
       }
     }
@@ -135,18 +147,3 @@ class DioClient {
     return const NetworkException();
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

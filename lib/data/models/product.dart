@@ -28,14 +28,21 @@ class Product {
           '',
       stock: json['stock'] is int
           ? json['stock'] as int
-          : int.tryParse(json['stock']?.toString() ?? '') ?? 0,
+          : int.tryParse(
+                json['stock_actual']?.toString() ??
+                    json['stock']?.toString() ??
+                    '',
+              ) ??
+              0,
       stockMinimo: json['stock_minimo'] is int
           ? json['stock_minimo'] as int
           : json['stockMinimo'] is int
               ? json['stockMinimo'] as int
-              : int.tryParse(json['stock_minimo']?.toString() ??
-                      json['stockMinimo']?.toString() ??
-                      '') ??
+              : int.tryParse(
+                    json['stock_minimo']?.toString() ??
+                        json['stockMinimo']?.toString() ??
+                        '',
+                  ) ??
                   0,
       precioCosto: json['precio_costo'] is num
           ? (json['precio_costo'] as num).toDouble()
@@ -70,7 +77,7 @@ class Product {
     final payload = <String, dynamic>{
       'nombre': nombre,
       'codigo_barras': codigoBarras,
-      'stock': stock,
+      'stock_actual': stock,
       'stock_minimo': stockMinimo,
       'precio_costo': precioCosto,
       'precio_venta': precioVenta,

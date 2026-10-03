@@ -29,14 +29,18 @@ class _AddProductViewState extends State<_AddProductView> {
   final _nombreController = TextEditingController();
   final _codigoController = TextEditingController();
   final _stockController = TextEditingController(text: '0');
-  final _precioController = TextEditingController(text: '0.00');
+  final _stockMinimoController = TextEditingController(text: '0');
+  final _precioCostoController = TextEditingController();
+  final _precioVentaController = TextEditingController();
 
   @override
   void dispose() {
     _nombreController.dispose();
     _codigoController.dispose();
     _stockController.dispose();
-    _precioController.dispose();
+    _stockMinimoController.dispose();
+    _precioCostoController.dispose();
+    _precioVentaController.dispose();
     super.dispose();
   }
 
@@ -50,9 +54,9 @@ class _AddProductViewState extends State<_AddProductView> {
       nombre: _nombreController.text.trim(),
       codigoBarras: _codigoController.text.trim(),
       stock: int.tryParse(_stockController.text.trim()) ?? 0,
-      stockMinimo: 0,
-      precioCosto: double.tryParse(_precioController.text.trim()) ?? 0,
-      precioVenta: double.tryParse(_precioController.text.trim()) ?? 0,
+      stockMinimo: int.tryParse(_stockMinimoController.text.trim()) ?? 0,
+      precioCosto: double.tryParse(_precioCostoController.text.trim()) ?? 0,
+      precioVenta: double.tryParse(_precioVentaController.text.trim()) ?? 0,
     );
 
     context.read<ProductBloc>().add(AddProduct(product));
@@ -63,22 +67,20 @@ class _AddProductViewState extends State<_AddProductView> {
     return BlocListener<ProductBloc, ProductState>(
       listener: (context, state) {
         if (state is ProductActionSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
           context.pop();
         }
 
         if (state is ProductError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Nuevo producto'),
-        ),
+        appBar: AppBar(title: const Text('Nuevo producto')),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -94,8 +96,10 @@ class _AddProductViewState extends State<_AddProductView> {
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'El nombre es obligatorio.';
+                      final nombre = value?.trim() ?? '';
+                      final characterCount = nombre.runes.length;
+                      if (characterCount < 3 || characterCount > 100) {
+                        return 'El nombre debe tener entre 3 y 100 caracteres.';
                       }
                       return null;
                     },
@@ -108,8 +112,9 @@ class _AddProductViewState extends State<_AddProductView> {
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'El código es obligatorio.';
+                      final codigo = value?.trim() ?? '';
+                      if (!RegExp(r'^\d{8,14}$').hasMatch(codigo)) {
+                        return 'Ingresa entre 8 y 14 dígitos.';
                       }
                       return null;
                     },
@@ -123,29 +128,66 @@ class _AddProductViewState extends State<_AddProductView> {
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'El stock es obligatorio.';
-                      }
-                      if (int.tryParse(value.trim()) == null) {
-                        return 'Ingresa un número válido.';
+                      final stock = int.tryParse(value?.trim() ?? '');
+                      if (stock == null || stock < 0) {
+                        return 'Ingresa un entero mayor o igual a cero.';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
-                    controller: _precioController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    controller: _stockMinimoController,
+                    keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Precio',
+                      labelText: 'Stock mínimo',
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'El precio es obligatorio.';
+                      final stockMinimo = int.tryParse(value?.trim() ?? '');
+                      if (stockMinimo == null || stockMinimo < 0) {
+                        return 'Ingresa un entero mayor o igual a cero.';
                       }
-                      if (double.tryParse(value.trim()) == null) {
-                        return 'Ingresa un precio válido.';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _precioCostoController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Precio de costo',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      final price = double.tryParse(value?.trim() ?? '');
+                      if (price == null || price <= 0) {
+                        return 'El precio de costo debe ser mayor que cero.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _precioVentaController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Precio de venta',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      final salePrice = double.tryParse(value?.trim() ?? '');
+                      final costPrice = double.tryParse(
+                        _precioCostoController.text.trim(),
+                      );
+                      if (salePrice == null ||
+                          costPrice == null ||
+                          salePrice <= costPrice) {
+                        return 'El precio de venta debe superar el costo.';
                       }
                       return null;
                     },
@@ -160,10 +202,14 @@ class _AddProductViewState extends State<_AddProductView> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.save),
-                        label: Text(isLoading ? 'Guardando...' : 'Guardar producto'),
+                        label: Text(
+                          isLoading ? 'Guardando...' : 'Guardar producto',
+                        ),
                       );
                     },
                   ),
