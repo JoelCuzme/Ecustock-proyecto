@@ -24,8 +24,9 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
     torchEnabled: false,
   );
   final TextEditingController _barcodeController = TextEditingController();
-  final TextEditingController _quantityController =
-      TextEditingController(text: '1');
+  final TextEditingController _quantityController = TextEditingController(
+    text: '1',
+  );
   final ProductRepository _productRepository = ProductRepository();
 
   PermissionStatus _cameraStatus = PermissionStatus.denied;
@@ -65,8 +66,9 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
 
   Future<void> _requestCameraPermission() async {
     setState(() => _isLoading = true);
-    final status =
-        await NativePermissionService.requestCameraPermission(context);
+    final status = await NativePermissionService.requestCameraPermission(
+      context,
+    );
     if (!mounted) {
       return;
     }
@@ -96,8 +98,10 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
     final isValid = RegExp(r'^\d{8,14}$').hasMatch(cleanCode);
 
     if (!isValid) {
-      _showStatus('El código debe tener entre 8 y 14 dígitos.',
-          const Color(0xFFEF4444));
+      _showStatus(
+        'El código debe tener entre 8 y 14 dígitos.',
+        const Color(0xFFEF4444),
+      );
       return;
     }
 
@@ -110,10 +114,7 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
         _selectedProduct = product;
         _barcodeController.text = cleanCode;
       });
-      _showStatus(
-        'Producto encontrado en inventario',
-        const Color(0xFF10B981),
-      );
+      _showStatus('Producto encontrado en inventario', const Color(0xFF10B981));
     } on DioException catch (error) {
       if (mounted) {
         _showStatus(
@@ -145,11 +146,21 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
 
   void _showStatus(String message, Color color) {
     setState(() => _statusMessage = message);
+    final icon = color == const Color(0xFF10B981)
+        ? Icons.check_circle_outline
+        : color == const Color(0xFFF59E0B)
+            ? Icons.warning_amber_rounded
+            : Icons.error_outline;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
         backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -157,14 +168,18 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
   Future<void> _registerMovement(String type) async {
     if (_selectedProduct == null) {
       _showStatus(
-          'Primero escanea o busca un producto.', const Color(0xFFEF4444));
+        'Primero escanea o busca un producto.',
+        const Color(0xFFEF4444),
+      );
       return;
     }
 
     final quantity = int.tryParse(_quantityController.text) ?? 1;
     if (quantity <= 0) {
       _showStatus(
-          'La cantidad debe ser mayor que cero.', const Color(0xFFEF4444));
+        'La cantidad debe ser mayor que cero.',
+        const Color(0xFFEF4444),
+      );
       return;
     }
 
@@ -230,10 +245,10 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
   }
 
   Color _stockColor(int stock, int stockMinimo) {
-    if (stock <= stockMinimo) {
+    if (stock <= 0) {
       return const Color(0xFFEF4444);
     }
-    if (stock <= stockMinimo + 5) {
+    if (stock <= stockMinimo) {
       return const Color(0xFFF59E0B);
     }
     return const Color(0xFF10B981);
@@ -274,8 +289,8 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: const [
+              const Row(
+                children: [
                   Expanded(
                     child: _SummaryCard(
                       label: 'Críticos',
@@ -369,7 +384,10 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE0F2FE),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withValues(alpha: 0.55),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -395,55 +413,72 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
   Widget _buildScannerCard() {
     return Column(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: SizedBox(
-            height: 280,
-            child: Stack(
-              children: [
-                MobileScanner(
-                  controller: _scannerController,
-                  onDetect: (capture) {
-                    final rawValue = capture.barcodes.isNotEmpty
-                        ? capture.barcodes.first.rawValue
-                        : null;
-                    if (rawValue != null &&
-                        rawValue.trim().isNotEmpty &&
-                        rawValue.trim() != _selectedProduct?.codigoBarras) {
-                      _lookupProductByCode(rawValue);
-                    }
-                  },
-                ),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: _ScannerGuidePainter(),
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.35),
+              width: 1.5,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x140F172A),
+                blurRadius: 16,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: SizedBox(
+              height: 280,
+              child: Stack(
+                children: [
+                  MobileScanner(
+                    controller: _scannerController,
+                    onDetect: (capture) {
+                      final rawValue = capture.barcodes.isNotEmpty
+                          ? capture.barcodes.first.rawValue
+                          : null;
+                      if (rawValue != null &&
+                          rawValue.trim().isNotEmpty &&
+                          rawValue.trim() != _selectedProduct?.codigoBarras) {
+                        _lookupProductByCode(rawValue);
+                      }
+                    },
+                  ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(painter: _ScannerGuidePainter()),
                     ),
                   ),
-                ),
-                Positioned(
-                  bottom: 18,
-                  left: 18,
-                  child: FloatingActionButton(
-                    heroTag: 'flash-toggle',
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF0F172A),
-                    onPressed: _toggleFlash,
-                    child: const Icon(Icons.flash_on_rounded),
+                  Positioned(
+                    bottom: 18,
+                    left: 18,
+                    child: FloatingActionButton(
+                      heroTag: 'flash-toggle',
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF0F172A),
+                      onPressed: _toggleFlash,
+                      child: const Icon(Icons.flash_on_rounded),
+                    ),
                   ),
-                ),
-                Positioned(
-                  bottom: 18,
-                  right: 18,
-                  child: FloatingActionButton(
-                    heroTag: 'camera-toggle',
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF0F172A),
-                    onPressed: _switchCamera,
-                    child: const Icon(Icons.flip_camera_android_rounded),
+                  Positioned(
+                    bottom: 18,
+                    right: 18,
+                    child: FloatingActionButton(
+                      heroTag: 'camera-toggle',
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF0F172A),
+                      onPressed: _switchCamera,
+                      child: const Icon(Icons.flip_camera_android_rounded),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -525,11 +560,12 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE1E8F0)),
         boxShadow: const [
           BoxShadow(
-            color: Color.fromRGBO(15, 23, 42, 0.04),
-            blurRadius: 14,
-            offset: Offset(0, 6),
+            color: Color(0x0A0F172A),
+            blurRadius: 18,
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -562,8 +598,10 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFDBEAFE),
                   borderRadius: BorderRadius.circular(999),
@@ -577,6 +615,34 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Chip(
+              avatar: Icon(
+                product.stock <= 0
+                    ? Icons.remove_shopping_cart_outlined
+                    : product.stock <= product.stockMinimo
+                        ? Icons.warning_amber_rounded
+                        : Icons.check_circle_outline,
+                size: 18,
+                color: stockColor,
+              ),
+              label: Text(
+                product.stock <= 0
+                    ? 'Agotado'
+                    : product.stock <= product.stockMinimo
+                        ? 'Stock bajo'
+                        : 'Stock óptimo',
+              ),
+              backgroundColor: stockColor.withValues(alpha: 0.12),
+              side: BorderSide.none,
+              labelStyle: TextStyle(
+                color: stockColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           const SizedBox(height: 18),
           Row(
@@ -668,10 +734,7 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
                       value: 'Revisión de stock',
                       child: Text('Revisión de stock'),
                     ),
-                    DropdownMenuItem(
-                      value: 'Venta',
-                      child: Text('Venta'),
-                    ),
+                    DropdownMenuItem(value: 'Venta', child: Text('Venta')),
                     DropdownMenuItem(
                       value: 'Pedido recibido',
                       child: Text('Pedido recibido'),
@@ -700,9 +763,11 @@ class _BodegaScannerPageState extends State<BodegaScannerPage> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.check_circle_rounded),
-                  label: Text(_movement == 'ingreso'
-                      ? 'Registrar ingreso'
-                      : 'Registrar egreso'),
+                  label: Text(
+                    _movement == 'ingreso'
+                        ? 'Registrar ingreso'
+                        : 'Registrar egreso',
+                  ),
                 ),
               ),
             ],
@@ -744,10 +809,7 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF64748B),
-            ),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 8),
           Text(
