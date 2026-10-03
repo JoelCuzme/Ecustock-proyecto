@@ -25,6 +25,9 @@ class _AddProductView extends StatefulWidget {
 }
 
 class _AddProductViewState extends State<_AddProductView> {
+  static const _maxMariaDbInt = 2147483647;
+  static const _maxMariaDbDecimal = 99999999.99;
+
   final _formKey = GlobalKey<FormState>();
   final _nombreController = TextEditingController();
   final _codigoController = TextEditingController();
@@ -53,10 +56,10 @@ class _AddProductViewState extends State<_AddProductView> {
       id: 0,
       nombre: _nombreController.text.trim(),
       codigoBarras: _codigoController.text.trim(),
-      stock: int.tryParse(_stockController.text.trim()) ?? 0,
-      stockMinimo: int.tryParse(_stockMinimoController.text.trim()) ?? 0,
-      precioCosto: double.tryParse(_precioCostoController.text.trim()) ?? 0,
-      precioVenta: double.tryParse(_precioVentaController.text.trim()) ?? 0,
+      stock: int.parse(_stockController.text.trim()),
+      stockMinimo: int.parse(_stockMinimoController.text.trim()),
+      precioCosto: double.parse(_precioCostoController.text.trim()),
+      precioVenta: double.parse(_precioVentaController.text.trim()),
     );
 
     context.read<ProductBloc>().add(AddProduct(product));
@@ -129,8 +132,10 @@ class _AddProductViewState extends State<_AddProductView> {
                     ),
                     validator: (value) {
                       final stock = int.tryParse(value?.trim() ?? '');
-                      if (stock == null || stock < 0) {
-                        return 'Ingresa un entero mayor o igual a cero.';
+                      if (stock == null ||
+                          stock < 0 ||
+                          stock > _maxMariaDbInt) {
+                        return 'Ingresa un entero entre 0 y $_maxMariaDbInt.';
                       }
                       return null;
                     },
@@ -145,8 +150,10 @@ class _AddProductViewState extends State<_AddProductView> {
                     ),
                     validator: (value) {
                       final stockMinimo = int.tryParse(value?.trim() ?? '');
-                      if (stockMinimo == null || stockMinimo < 0) {
-                        return 'Ingresa un entero mayor o igual a cero.';
+                      if (stockMinimo == null ||
+                          stockMinimo < 0 ||
+                          stockMinimo > _maxMariaDbInt) {
+                        return 'Ingresa un entero entre 0 y $_maxMariaDbInt.';
                       }
                       return null;
                     },
@@ -163,8 +170,11 @@ class _AddProductViewState extends State<_AddProductView> {
                     ),
                     validator: (value) {
                       final price = double.tryParse(value?.trim() ?? '');
-                      if (price == null || price <= 0) {
-                        return 'El precio de costo debe ser mayor que cero.';
+                      if (price == null ||
+                          !price.isFinite ||
+                          price <= 0 ||
+                          price > _maxMariaDbDecimal) {
+                        return 'El precio de costo debe ser mayor que cero y no superar $_maxMariaDbDecimal.';
                       }
                       return null;
                     },
@@ -185,9 +195,12 @@ class _AddProductViewState extends State<_AddProductView> {
                         _precioCostoController.text.trim(),
                       );
                       if (salePrice == null ||
+                          !salePrice.isFinite ||
                           costPrice == null ||
-                          salePrice <= costPrice) {
-                        return 'El precio de venta debe superar el costo.';
+                          !costPrice.isFinite ||
+                          salePrice <= costPrice ||
+                          salePrice > _maxMariaDbDecimal) {
+                        return 'El precio de venta debe superar el costo y no superar $_maxMariaDbDecimal.';
                       }
                       return null;
                     },
